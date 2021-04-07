@@ -1,0 +1,26 @@
+device: '0, 1'
+num_workers: 16
+weights: ''
+num_classes: 10 
+
+epoch: 200
+warmup: 12  # real epoch = epoch - warmup 
+batch_size: 8
+nbs: 8
+
+lr: 0.01
+lrf: 0.1
+optim: 'SGD'
+momentum: 0.937
+
+mode: 'debug'
+
+weight_decay: 0.0001
+
+frames: 56
+img_size: 224
+
+input_dir: '../../data/cassava1920'
+save_dir: 'outs/'
+
+note: ''
