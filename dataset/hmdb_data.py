@@ -11,8 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from torchvision import transforms
 from sklearn.model_selection import StratifiedKFold, KFold
-
-import transforms3d
+from .transforms3d import *
 
 def init_seed(seed):
     random.seed(seed)
@@ -29,14 +28,14 @@ def train(img_size=224, target_frame=56):
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomResizedCrop(img_size, scale=(0.66, 1.0), ratio=(3. / 4., 4. / 3.)),
         transforms.Normalize(mean=[0.471, 0.448, 0.408], std=[0.234, 0.239, 0.242]),
-        transforms3d.Fitframe(target_frame=target_frame),
+        Fitframe(target_frame=target_frame),
     ])
 
 def val(img_size=224, target_frame=56):
     return transforms.Compose([
         transforms.Resize([img_size, img_size]),
         transforms.Normalize(mean=[0.471, 0.448, 0.408], std=[0.234, 0.239, 0.242]),
-        transforms3d.Fitframe(target_frame=target_frame),
+        Fitframe(target_frame=target_frame),
     ])
 
 class HMDBDataset(Dataset):
@@ -94,13 +93,9 @@ def collate_fn(data):
     frames = torch.stack(frames)
     labels = torch.tensor(labels)
 
-    return {
-        'frames': frames,
-        'labels': labels
-    }
+    return frames, labels
 
-
-def get_loaders(video_dir, batch_size=4, num_workers=4, frames, img_size, folder=0):
+def get_loaders(video_dir, batch_size=4, num_workers=4, frames=56, img_size=224, fold=0):
 
     init_seed(10086)
 

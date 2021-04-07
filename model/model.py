@@ -3,6 +3,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.cuda.amp import autocast
 
 from functools import partial
 
@@ -113,12 +114,14 @@ class VireoNet(nn.Module):
         self._fc = nn.Linear(head_chann, num_classes)
         self._activate = nn.ReLU()
 
+
     def forward(self, input):
-        x = self._blocks(input)
-        x = self._activate(self._bn_head(self._conv_head(x)))
-        x = self._avg_pooling(x).flatten(start_dim=1)
-        x = self._dropout(x)
-        x = self._fc(x)
+        with autocast():
+            x = self._blocks(input)
+            x = self._activate(self._bn_head(self._conv_head(x)))
+            x = self._avg_pooling(x).flatten(start_dim=1)
+            x = self._dropout(x)
+            x = self._fc(x)
 
         return x
 

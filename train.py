@@ -42,7 +42,7 @@ def get_scheduler(optim, epoch, warm_up=10):
 
     def sche_with_warmup(x):
         if x < warm_up:
-            lr = 0.9 * (epoch / t) + 0.1
+            lr = 0.9 * (x / epoch) + 0.1
         else:
             lr = ((1 + math.cos(x * math.pi / epoch)) / 2) * (1 - params.lrf) + params.lrf
         return lr
@@ -62,9 +62,10 @@ if __name__ == "__main__":
     device = select_device(params.device, batch_size=params.batch_size)
     init_seeds(10086)
 
-    loaders = get_loaders(params.input_dir, params.batch_size, params.num_workers, parames.frames, params.img_size)
-    net, ckpt = get_model(params.)
-    net = nn.DataParallel(net).to(device, non_blocking=True)
+    loaders = get_loaders(params.input_dir, params.batch_size, params.num_workers, params.frames, params.img_size)
+    net = get_model(params.weights, params.num_classes)
+    # net = nn.DataParallel(net).to(device, non_blocking=True)
+    net = net.to(device, non_blocking=True)
     loss = get_loss()
 
     params.accumulate = max(round(params.nbs / params.batch_size), 1)
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     for k, v in net.named_modules():
         if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
             pg2.append(v.bias)
-        if isinstance(v, nn.BatchNorm2d):
+        if isinstance(v, nn.BatchNorm3d) or isinstance(v, nn.BatchNorm2d):
             pg0.append(v.weight)
         elif hasattr(v, 'weight'):
             pg1.append(v.weight)
@@ -91,18 +92,16 @@ if __name__ == "__main__":
 
     scheduler = get_scheduler(optim, params.epoch, warm_up=params.warmup)
 
-    if params.mode != 'debug'
-        writer = SummaryWriter(params.save_dir +f'/{datetime.datetime.now().strftime("%Y%m%d:%H%M")}')
-    else:
+    if params.mode == 'debug':
         writer = None
-        
-    params.save_dir = writer.logdir
-    with open(os.path.join(params.save_dir, 'params.yml'), 'w') as f:
-        yaml.dump(params.get_dict(), f, sort_keys=False)
+    else:
+        writer = SummaryWriter(params.save_dir +f'/{datetime.datetime.now().strftime("%Y%m%d:%H%M")}')
+        params.save_dir = writer.logdir
+        with open(os.path.join(params.save_dir, 'params.yml'), 'w') as f:
+            yaml.dump(params.get_dict(), f, sort_keys=False)
 
-    model = Runner()
-
-    model.train(params, net, optim, device, loss, writer, scheduler)  
+    model = Runner(params, net, optim, device, loss, writer, scheduler)
+    model.train(loaders)  
 
     if writer:
         writer.close()

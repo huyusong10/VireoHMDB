@@ -84,7 +84,7 @@ class Attention3d_mode1(nn.Module):
         dw = dw.unsqueeze(dim=-2)
         hw = hw.unsqueeze(dim=-3)
         mask = F.interpolate((dh * dw * hw), size=(d, h, w))
-        out = inputs * mask + inputs
+        out = inputs * mask
         return out
 
 
@@ -146,11 +146,11 @@ class Attention3d(nn.Module):
         x = self._project_conv(x).sigmoid()
 
         d, h, w = torch.split(x, self._channels, dim=1)
-        d = d.view((_b, _c, _d, 1, 1))
-        h = h.view((_b, _c, 1, _h, 1))
-        w = w.view((_b, _c, 1, 1, _w))
+        d = d.view((_b, _c, min_dim, 1, 1))
+        h = h.view((_b, _c, 1, min_dim, 1))
+        w = w.view((_b, _c, 1, 1, min_dim))
         mask = F.interpolate((d * h * w), size=(_d, _h, _w))
-        out = inputs * mask + inputs
+        out = inputs * mask
 
         return out
 

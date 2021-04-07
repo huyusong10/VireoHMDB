@@ -13,7 +13,7 @@ class Runner():
 
     def __init__(self, params, net, optim, torch_device, loss, writer, scheduler):
         self.params = params
-        self.result = os.path.join(self.save_dir, 'results.txt')
+        self.result = os.path.join(self.params.save_dir, 'results.txt')
         self.writer = writer
         self.torch_device = torch_device
         self.net = net
@@ -40,12 +40,13 @@ class Runner():
             self.net.train()
             loss_ls = []
 
-            pbar = tqdm(enumerate(loaders['train']), total=loaders['train'])
+            nb = len(loaders['train'])
+            pbar = tqdm(enumerate(loaders['train']), total=nb)
             for i, (frames_, labels_) in pbar:
                 ni = i + nb * epoch
-                frames_ = frames_.to(self.torch_device, non_blocking=True)
                 labels_ = labels_.to(self.torch_device, non_blocking=True)
-                with amp.autocast(enabled=True):
+                with amp.autocast():
+                    frames_ = frames_.half().to(self.torch_device, non_blocking=True)
                     preds = self.net(frames_)
                     loss = self.loss(preds, labels_)
 
@@ -56,13 +57,12 @@ class Runner():
 
                     scaler.step(self.optim)
                     scaler.update()
-                    self.update_ema()
                     self.optim.zero_grad()
 
                 if self.writer:
                     self.writer.add_scalars('Loss', {'train set': loss.item()}, ni)
                 pbar.set_description('Step{}. Epoch: {}/{}. Iteration: {}/{}. Loss: {:.5f}. '
-                        .format(ni, epoch, total_epoch-1, i,
+                        .format(ni, epoch, self.params.epoch-1, i,
                                 nb-1, loss.item()))
 
             self.scheduler.step()
@@ -77,7 +77,7 @@ class Runner():
 
             with open(self.result, 'a') as f:
                 f.write('Epoch: {}/{}  Train loss: {:.4f}  Val loss: {:.4f}  Accuracy:{:.4f}  Presicion: {:.4f}  Recall: {:.4f}  Metric: {:.4f}'
-                        .format(epoch, total_epoch-1, np.mean(loss_ls), res['loss'], res['acc'], res['precision'], res['recall'], res['metric']) + '\n')
+                        .format(epoch, self.params.epoch-1, np.mean(loss_ls), res['loss'], res['acc'], res['precision'], res['recall'], res['metric']) + '\n')
             
             if res['singlecls'] is not None:
                 save_str = ''
