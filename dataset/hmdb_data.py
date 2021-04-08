@@ -90,37 +90,48 @@ def collate_fn(data):
     labels = [s['label'] for s in data]
 
     # (b, c, d, h, w)
-    frames = torch.stack(frames)
+    frames = torch.stack(frames).float()
     labels = torch.tensor(labels)
 
     return frames, labels
 
-def get_loaders(video_dir, batch_size=4, num_workers=4, frames=56, img_size=224, fold=0):
+def get_loaders(video_dir, batch_size, num_workers, frames, img_size, fold=0, debug=False):
 
     init_seed(10086)
 
     ids = []
     labels = []
-    for class_id, folder_name in enumerate(os.listdir(video_dir)):
+    class_id = 0
+    for folder_name in os.listdir(video_dir):
         folder = os.path.join(video_dir, folder_name)
         if os.path.isdir(folder):
-            # class_name = os.path.split(folder)[-1]
             videos = glob(os.path.join(folder, '*.avi'))
             if videos:
                 ids += videos
                 labels += [class_id] * len(videos)
+                class_id += 1
 
-    
     skf = StratifiedKFold(n_splits=5)
     ti, vi = list(skf.split(ids, labels))[fold]
-    trains = {
-        'ids': [ids[x] for x in ti],
-        'labels': [labels[x] for x in ti]
-    }
-    vals = {
-        'ids': [ids[x] for x in vi],
-        'labels': [labels[x] for x in vi]
-    }
+
+    if debug:
+        trains = {
+            'ids': [ids[x] for x in ti[:10]],
+            'labels': [labels[x] for x in ti[:10]]
+        }
+        vals = {
+            'ids': [ids[x] for x in vi[:10]],
+            'labels': [labels[x] for x in vi[:10]]
+        }
+    else:
+        trains = {
+            'ids': [ids[x] for x in ti],
+            'labels': [labels[x] for x in ti]
+        }
+        vals = {
+            'ids': [ids[x] for x in vi],
+            'labels': [labels[x] for x in vi]
+        }
 
     train_set = HMDBDataset(
         trains,

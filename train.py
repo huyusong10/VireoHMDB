@@ -56,13 +56,15 @@ if __name__ == "__main__":
     params_file = check_file(params_file)
     params = Params('params.yml')
 
+    debug = True if params.mode == 'debug' else False
+
     params.save_dir = os.path.join(os.getcwd(), params.save_dir)
     os.makedirs(params.save_dir, exist_ok=True)
 
     device = select_device(params.device, batch_size=params.batch_size)
     init_seeds(10086)
 
-    loaders = get_loaders(params.input_dir, params.batch_size, params.num_workers, params.frames, params.img_size)
+    loaders = get_loaders(params.input_dir, params.batch_size, params.num_workers, params.frames, params.img_size, debug=debug)
     net = get_model(params.weights, params.num_classes)
     # net = nn.DataParallel(net).to(device, non_blocking=True)
     net = net.to(device, non_blocking=True)
@@ -92,7 +94,7 @@ if __name__ == "__main__":
 
     scheduler = get_scheduler(optim, params.epoch, warm_up=params.warmup)
 
-    if params.mode == 'debug':
+    if debug:
         writer = None
     else:
         writer = SummaryWriter(params.save_dir +f'/{datetime.datetime.now().strftime("%Y%m%d:%H%M")}')

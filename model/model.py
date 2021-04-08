@@ -94,7 +94,7 @@ class VireoNet(nn.Module):
         ]
         kernel_size = [5, 3, 3, 5, 3, 3]
         channels = [3, 32, 56, 80, 104, 128, 160]
-        se = [False, True, True, True, True, False]
+        se = [True, True, True, True, True, True]
 
         self._blocks = []
         for idx in range(6):
@@ -116,12 +116,11 @@ class VireoNet(nn.Module):
 
 
     def forward(self, input):
-        with autocast():
-            x = self._blocks(input)
-            x = self._activate(self._bn_head(self._conv_head(x)))
-            x = self._avg_pooling(x).flatten(start_dim=1)
-            x = self._dropout(x)
-            x = self._fc(x)
+        x = self._blocks(input)
+        x = self._activate(self._bn_head(self._conv_head(x)))
+        x = self._avg_pooling(x).flatten(start_dim=1)
+        x = self._dropout(x)
+        x = self._fc(x)
 
         return x
 

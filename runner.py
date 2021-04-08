@@ -22,9 +22,9 @@ class Runner():
         self.scheduler = scheduler
         self.start_epoch = 0
         self.best_metric = 0.5
+        self.save = True if self.params.mode == 'train' else False
 
     def save(self, epoch, filename="train"):
-        if self.params.mode == 'train':
             torch.save({"epoch": epoch,
                         "network": self.net.module.state_dict(),
                         "best_metric": self.best_metric,
@@ -44,9 +44,9 @@ class Runner():
             pbar = tqdm(enumerate(loaders['train']), total=nb)
             for i, (frames_, labels_) in pbar:
                 ni = i + nb * epoch
+                frames_ = frames_.to(self.torch_device, non_blocking=True)
                 labels_ = labels_.to(self.torch_device, non_blocking=True)
                 with amp.autocast():
-                    frames_ = frames_.half().to(self.torch_device, non_blocking=True)
                     preds = self.net(frames_)
                     loss = self.loss(preds, labels_)
 
@@ -79,11 +79,11 @@ class Runner():
                 f.write('Epoch: {}/{}  Train loss: {:.4f}  Val loss: {:.4f}  Accuracy:{:.4f}  Presicion: {:.4f}  Recall: {:.4f}  Metric: {:.4f}'
                         .format(epoch, self.params.epoch-1, np.mean(loss_ls), res['loss'], res['acc'], res['precision'], res['recall'], res['metric']) + '\n')
             
-            if res['singlecls'] is not None:
+            if res['singlecls'] is not None and self.save:
                 save_str = ''
                 for i in res['singlecls']:
                     save_str += '({:d},{:.4f},{:.4f},{:.4f})  '.format(i[0], i[1], i[2], i[3])
-                with open(os.path.join(self.save_dir, 'singlecls_results.txt'), 'a') as f:
+                with open(os.path.join(self.params.save_dir, 'singlecls_results.txt'), 'a') as f:
                     f.write(save_str + '\n')
 
     def valid(self, epoch, val_loader, step):
@@ -102,7 +102,7 @@ class Runner():
             self.writer.add_scalar('Recall', res['recall'], epoch)
             self.writer.add_scalar('Metric', res['metric'], epoch)
 
-        if metric > self.best_metric:
+        if metric > self.best_metric and self.save:
             self.best_metric = metric
             self.save(epoch, "ckpt_%d_%.4f" % (
                 epoch, metric))
@@ -177,7 +177,7 @@ class Runner():
             'acc': (t_tp+t_tn)/(t_tp+t_fp+t_tn+t_fn),
             'precision': t_tp/(t_tp+t_fp),
             'recall': t_tp/(t_tp+t_fn),
-            'singlecls': singlecls_ls if self.printcls else None
+            'singlecls': singlecls_ls
         }
 
         return ret

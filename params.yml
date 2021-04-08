@@ -1,19 +1,19 @@
 device: '0'
-num_workers: 2
+num_workers: 32
 weights: ''
 num_classes: 51
 
 epoch: 200
 warmup: 12  # real epoch = epoch - warmup 
-batch_size: 1
-nbs: 1
+batch_size: 8
+nbs: 8
 
 lr: 0.01
 lrf: 0.1
 optim: 'SGD'
 momentum: 0.937
 
-mode: 'debug'
+mode: 'test'
 
 weight_decay: 0.0001
 
@@ -21,6 +21,6 @@ frames: 56
 img_size: 224
 
 input_dir: '../../data/hmdb51'
-save_dir: 'outs/3d/'
+save_dir: '../../outs/3d/'
 
-note: ''
+note: '3d attention mode2'

@@ -24,7 +24,7 @@ class h_swish(nn.Module):
 
 class Attention3d_mode1(nn.Module):
 
-    def __init__(self, channels, kernel_size=3, bn_mom=0.99, bn_eps=0.001, reduction=32):
+    def __init__(self, channels, kernel_size=3, bn_mom=0.99, bn_eps=0.001, reduction=48):
         super().__init__()
 
         self._channels = channels
@@ -90,7 +90,7 @@ class Attention3d_mode1(nn.Module):
 
 class Attention3d(nn.Module):
 
-    def __init__(self, channels, kernel_size=3, bn_mom=0.99, bn_eps=0.001, reduction=32):
+    def __init__(self, channels, kernel_size=3, bn_mom=0.99, bn_eps=0.001, reduction=48):
         super().__init__()
 
         self._channels = channels
