@@ -120,8 +120,8 @@ def get_loaders(video_dir, batch_size, num_workers, frames, img_size, fold=0, de
             'labels': [labels[x] for x in ti[:10]]
         }
         vals = {
-            'ids': [ids[x] for x in vi[:10]],
-            'labels': [labels[x] for x in vi[:10]]
+            'ids': [ids[x] for x in vi[-10:]],
+            'labels': [labels[x] for x in vi[-10:]]
         }
     else:
         trains = {

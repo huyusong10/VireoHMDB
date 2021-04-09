@@ -4,25 +4,9 @@ import math
 import torch
 from torch import nn
 from torch.nn import functional as F
-from .utils import get_conv
+from .utils import get_conv, get_act
 
-class h_sigmoid(nn.Module):
-    def __init__(self, inplace=True):
-        super(h_sigmoid, self).__init__()
-        self.relu = nn.ReLU6(inplace=inplace)
-
-    def forward(self, x):
-        return self.relu(x + 3) / 6
-
-class h_swish(nn.Module):
-    def __init__(self, inplace=True):
-        super(h_swish, self).__init__()
-        self.sigmoid = h_sigmoid(inplace=inplace)
-
-    def forward(self, x):
-        return x * self.sigmoid(x)
-
-class Attention3d_mode1(nn.Module):
+class Attention3d(nn.Module):
 
     def __init__(self, channels, kernel_size=3, bn_mom=0.99, bn_eps=0.001, reduction=48):
         super().__init__()
@@ -49,7 +33,7 @@ class Attention3d_mode1(nn.Module):
             in_channels=se_chann, out_channels=depth_chann,
             kernel_size=1, bias=True
         )
-        self._activate = h_swish()
+        self._activate = get_act('h_swish')
 
     def forward(self, inputs):
 
@@ -88,7 +72,7 @@ class Attention3d_mode1(nn.Module):
         return out
 
 
-class Attention3d(nn.Module):
+class Attention3d_mode2(nn.Module):
 
     def __init__(self, channels, kernel_size=3, bn_mom=0.99, bn_eps=0.001, reduction=48):
         super().__init__()
@@ -115,7 +99,7 @@ class Attention3d(nn.Module):
             in_channels=se_chann, out_channels=depth_chann,
             kernel_size=1, bias=True
         )
-        self._activate = h_swish()
+        self._activate = get_act('h_swish')
 
     def forward(self, inputs):
 
