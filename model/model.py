@@ -94,7 +94,8 @@ class VireoNet(nn.Module):
         ]
         kernel_size = [5, 3, 3, 5, 3, 3]
         channels = [3, 32, 56, 80, 104, 128, 160]
-        se = [True, True, True, True, True, True]
+        # se = [True, True, True, True, True, True]
+        se = [False] * 6
 
         self._blocks = []
         for idx in range(6):

@@ -1,4 +1,4 @@
-device: '1'
+device: '0'
 num_workers: 32
 weights: ''
 num_classes: 51
@@ -21,6 +21,6 @@ frames: 56
 img_size: 224
 
 input_dir: '../../data/hmdb51'
-save_dir: '../../outs/3d/'
+save_dir: '../../outs/3d'
 
-note: '3d attention mode1'
+note: 'w/o attention'

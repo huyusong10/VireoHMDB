@@ -5,6 +5,14 @@ from torchvision import transforms
 
 class Fitframe(nn.Module):
 
+    def _fit_diff(self, frames_to_change, diff):
+
+        if len(frames_to_change) != diff:
+            frames_to_change = frames_to_change[:-1]
+        return frames_to_change
+
+class ReduceFrame(Fitframe):
+    
     def __init__(self, target_frame):
         super().__init__()
         self.target = target_frame
@@ -19,8 +27,19 @@ class Fitframe(nn.Module):
             frames = [f for idx, f in enumerate(frames) if idx not in frames_to_del]
 
             return torch.stack(frames)
+        else:
+            return frames
 
-        elif n < self.target:
+
+class Expandframe(Fitframe):
+
+    def __init__(self, target_frame):
+        super().__init__()
+        self.target = target_frame
+
+    def forward(self, frames):
+        n = frames.shape[0]
+        if n < self.target:
             diff = self.target - n
             stride = n / diff
             frames_to_add = np.floor(np.arange(0, n, stride)).astype(int)
@@ -33,11 +52,6 @@ class Fitframe(nn.Module):
         else:
             return frames
 
-    def _fit_diff(self, frames, diff):
-
-        if len(frames) != diff:
-            frames = frames[:-1]
-        return frames
 
 class RandomCenterCrop(nn.Module):
 
