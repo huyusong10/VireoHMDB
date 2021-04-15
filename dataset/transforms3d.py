@@ -52,18 +52,3 @@ class Expandframe(Fitframe):
         else:
             return frames
 
-
-class RandomCenterCrop(nn.Module):
-
-    def __init__(self, p=0.5, size=[224, 224]):
-        super().__init__(size)
-        self.p = p
-        self.size = size
-
-    def forward(self, frames):
-
-        if np.random.rand < p:
-            transform = transforms.CenterCrop(self.size)
-            frames = transform(frames)
-
-        return frames

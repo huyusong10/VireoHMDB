@@ -73,13 +73,14 @@ class Runner():
                 raise RuntimeError('val_loader not existed!')
 
             if self.writer:
-                self.writer.add_scalar('lr', self.optim.state_dict()['param_groups'][0]['lr'], epoch)
+                lr = self.optim.state_dict()['param_groups'][0]['lr']
+                self.writer.add_scalar('lr', lr, epoch)
                 self.writer.add_scalars('Loss', {'val set': val_loss}, ni)
                 self.writer.add_scalar('Top1', top1_acc, epoch)
                 self.writer.add_scalar('Top5', top5_acc, epoch)
                 with open(self.result, 'a') as f:
-                    f.write('Epoch: {}/{}  Train loss: {:.4f}  Val loss: {:.4f}  Top1:{:.4f}  Top5: {:.4f}'
-                            .format(epoch, self.params.epoch-1, np.mean(loss_ls), val_loss, top1_acc, top5_acc) + '\n')
+                    f.write('Epoch: {}/{}  LR: {:.5f}  Train loss: {:.4f}  Val loss: {:.4f}  Top1:{:.4f}  Top5: {:.4f}'
+                            .format(epoch, self.params.epoch-1, lr, np.mean(loss_ls), val_loss, top1_acc, top5_acc) + '\n')
             
     def valid(self, epoch, loader):
         

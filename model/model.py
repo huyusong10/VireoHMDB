@@ -8,7 +8,7 @@ from torch.cuda.amp import autocast
 from functools import partial
 
 from .utils import get_conv, get_act
-from .attention3d import Attention3d
+from .attention3d import Attention3d, Attention3d_up, SE
 
 
 class Bellii3D(nn.Module):
@@ -37,7 +37,7 @@ class Bellii3D(nn.Module):
         self._bn1 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
 
         if self._se:
-            self._attention = Attention3d(expc)
+            self._attention = Attention3d_up(expc)
 
         # pointwise conv
         self._pointwise_conv = self.conv3d(
@@ -86,16 +86,16 @@ class VireoNet(nn.Module):
         repeats = [1, 2, 3, 4, 4, 2]
         strides = [
             (1, 2, 2),
-            (2, 2, 2),
             (1, 2, 2),
-            (2, 2, 2),
+            (1, 2, 2),
+            (1, 2, 2),
             (1, 1, 1),
             (2, 2, 2),
         ]
         kernel_size = [5, 3, 3, 5, 3, 3]
         channels = [3, 32, 56, 80, 104, 128, 160]
-        # se = [True, True, True, True, True, True]
-        se = [False] * 6
+        se = [True, True, True, True, True, True]
+        # se = [False] * 6
 
         self._blocks = []
         for idx in range(6):
