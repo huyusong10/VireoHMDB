@@ -23,4 +23,4 @@ img_size: 224
 input_dir: '../../data/hmdb51'
 save_dir: '../../outs/3d'
 
-note: '16 fps with se'
+note: '16 fps with attention_up'
