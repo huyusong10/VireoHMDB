@@ -97,7 +97,7 @@ if __name__ == "__main__":
     if debug:
         writer = None
     else:
-        writer = SummaryWriter(params.note.replace(' ', '')+params.save_dir +f'/{datetime.datetime.now().strftime("%Y%m%d:%H%M")}')
+        writer = SummaryWriter(params.save_dir + '/' + params.note.replace(' ', '') + f'/{datetime.datetime.now().strftime("%Y%m%d:%H%M")}')
         params.save_dir = writer.logdir
         with open(os.path.join(params.save_dir, 'params.yml'), 'w') as f:
             yaml.dump(params.get_dict(), f, sort_keys=False)
