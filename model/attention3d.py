@@ -33,7 +33,7 @@ class Attention3d_deprecated(nn.Module):
             in_channels=se_chann, out_channels=depth_chann,
             kernel_size=1, bias=True
         )
-        self._activate = get_act('h_swish')
+        self._activate = get_act('ReLU')
 
     def forward(self, inputs):
 
@@ -99,7 +99,7 @@ class Attention3d(nn.Module):
             in_channels=se_chann, out_channels=depth_chann,
             kernel_size=1, bias=True
         )
-        self._activate = get_act('h_swish')
+        self._activate = get_act('ReLU')
 
     def forward(self, inputs):
 
@@ -166,7 +166,7 @@ class Attention3d_up(nn.Module):
             in_channels=se_chann, out_channels=depth_chann,
             kernel_size=1, bias=True
         )
-        self._activate = get_act('h_swish')
+        self._activate = get_act('ReLU')
 
     def forward(self, inputs):
 

@@ -45,7 +45,7 @@ class Bellii3D(nn.Module):
         )
         self._bn2 = nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
 
-        self._activate = get_act('h_swish')
+        self._activate = get_act('ReLU')
 
     def forward(self, inputs):
         x = inputs
@@ -88,7 +88,7 @@ class VireoNet(nn.Module):
             (1, 2, 2),
             (1, 2, 2),
             (1, 2, 2),
-            (1, 2, 2),
+            (2, 2, 2),
             (1, 1, 1),
             (2, 2, 2),
         ]
@@ -113,7 +113,7 @@ class VireoNet(nn.Module):
         self._avg_pooling = nn.AdaptiveAvgPool3d(1)
         self._dropout = nn.Dropout(0.2)
         self._fc = nn.Linear(head_chann, num_classes)
-        self._activate = get_act('h_swish')
+        self._activate = get_act('ReLU')
 
 
     def forward(self, input):
