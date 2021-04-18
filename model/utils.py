@@ -210,7 +210,7 @@ class h_sigmoid(nn.Module):
 
 
 class h_swish(nn.Module):
-    def __init__(self, inplace=False):
+    def __init__(self, inplace=True):
         super(h_swish, self).__init__()
         self.sigmoid = h_sigmoid(inplace=inplace)
 
@@ -237,11 +237,11 @@ class MemoryEfficientSwish(nn.Module):
         return SwishImplementation.apply(x)
 
 
-def get_act(act):
+def get_act(act='ReLU'):
 
     if act == 'h_swish':
         return h_swish()
     if act == 'swish':
         return MemoryEfficientSwish()
     else:
-        return nn.ReLU()
+        return nn.ReLU(inplace=True)
