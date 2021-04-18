@@ -13,7 +13,7 @@ from .attention3d import Attention3d, Attention3d_up, SE
 
 class Bellii3D(nn.Module):
 
-    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio=4, bn_mom = 0.99, bn_eps = 0.001, se=False):
+    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio=4, bn_mom=0.9, bn_eps=0.001, se=False):
         super().__init__()
         self.inc = inc
         self.ouc = ouc
@@ -24,7 +24,8 @@ class Bellii3D(nn.Module):
         self._se = se
         _, self.conv2d, self.conv3d = get_conv()
 
-        expc = inc * self.expand_ratio
+        # expand phase
+        expc = round(inc * self.expand_ratio)
         if self.expand_ratio != 1:
             self._expand_conv = self.conv3d(in_channels=inc, out_channels=expc, kernel_size=1, bias=False)
             self._bn0 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
@@ -39,8 +40,8 @@ class Bellii3D(nn.Module):
         if self._se:
             self._attention = Attention3d_up(expc)
 
-        # pointwise conv
-        self._pointwise_conv = self.conv3d(
+        # project conv
+        self._project_conv = self.conv3d(
             in_channels=expc, out_channels=ouc, kernel_size=1, bias=False
         )
         self._bn2 = nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
@@ -57,18 +58,16 @@ class Bellii3D(nn.Module):
             x = self._activate(x)
         
         # depthwise conv
-        # print('depthwise1',x.shape)
         x = self._depthwise_conv(x)
         x = self._bn1(x)
         x = self._activate(x)
-        # print('depthwise2',x.shape)
 
         # se
         if self._se:
             self._attention(x)
 
-        # pointwise conv
-        x = self._pointwise_conv(x)
+        # project conv
+        x = self._project_conv(x)
         x = self._bn2(x)
 
         # skip connection
@@ -79,9 +78,11 @@ class Bellii3D(nn.Module):
 
 class VireoNet(nn.Module):
     
-    def __init__(self, num_classes, bn_mom = 0.99, bn_eps=0.001):
+    def __init__(self, num_classes, bn_mom = 0.9, bn_eps=0.001):
         super().__init__()
         _, self.conv2d, self.conv3d = get_conv()
+        self._bn_mom = 1 - bn_mom
+        self._bn_eps = bn_eps
 
         repeats = [1, 2, 3, 4, 4, 2]
         strides = [
@@ -107,8 +108,8 @@ class VireoNet(nn.Module):
         self._blocks = nn.Sequential(*self._blocks)
 
         head_chann = 640
-        self._conv_head = self.conv3d(channels[-1], head_chann, kernel_size=1, bias=False)
-        self._bn_head = nn.BatchNorm3d(num_features=head_chann, momentum=bn_mom, eps=bn_eps)
+        self._head_conv = self.conv3d(channels[-1], head_chann, kernel_size=1, bias=False)
+        self._head_bn = nn.BatchNorm3d(num_features=head_chann, momentum=self._bn_mom, eps=self._bn_eps)
 
         self._avg_pooling = nn.AdaptiveAvgPool3d(1)
         self._dropout = nn.Dropout(0.2)
@@ -118,7 +119,7 @@ class VireoNet(nn.Module):
 
     def forward(self, input):
         x = self._blocks(input)
-        x = self._activate(self._bn_head(self._conv_head(x)))
+        x = self._activate(self._head_bn(self._head_conv(x)))
         x = self._avg_pooling(x).flatten(start_dim=1)
         x = self._dropout(x)
         x = self._fc(x)
