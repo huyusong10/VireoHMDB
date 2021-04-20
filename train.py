@@ -10,6 +10,7 @@ from tensorboardX import SummaryWriter
 
 from runner import Runner
 from model.model import VireoNet
+from model.x3dm import X3Dm
 from dataset.hmdb_data import get_loaders
 from utils.utils import check_file, select_device, init_seeds
 
@@ -24,14 +25,19 @@ class Params:
     def get_dict(self):
         return self.params
 
-def get_model(path, num_classes):
+def get_model(path, num_classes, name='vireonet'):
+    if name == 'vireonet':
+        model_cls = VireoNet
+    elif name == 'x3dm':
+        model_cls = X3Dm
+
     if path:
         path = check_file(path)
         ckpt = torch.load(path)
-        model = VireoNet(num_classes=num_classes)
+        model = model_cls(num_classes=num_classes)
         model.load_state_dict(ckpt['network'], strict=False, map_location='cpu')
     else:
-        model = VireoNet(num_classes=num_classes)
+        model = model_cls(num_classes=num_classes)
 
     return model
 

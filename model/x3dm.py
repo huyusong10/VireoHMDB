@@ -35,7 +35,7 @@ class X3DTransform(nn.Module):
         self._bn1 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
 
         if self._se:
-            self._attention = SE(expc)
+            self._attention = Attention3d(expc)
 
         # projec conv
         self._project_conv = self.conv3d(
@@ -84,10 +84,11 @@ class X3Dm(nn.Module):
             (1, 2, 2),
         ]
         channels = [24, 48, 96, 192]
-        se = [True] * 6
+        se = [False] * 6
 
+        input_chann = 3
         stem_chann = 24
-        self._stem_conv_xy = self.conv3d(3, stem_chann, stride=(1, 2, 2), kernel_size=(1, 3, 3), bias=False)
+        self._stem_conv_xy = self.conv3d(input_chann, stem_chann, stride=(1, 2, 2), kernel_size=(1, 3, 3), bias=False)
         self._stem_conv_t = self.conv3d(stem_chann, stem_chann, stride=(1, 1, 1), kernel_size=(5, 1, 1), bias=False)
         self._stem_bn = nn.BatchNorm3d(num_features=24, momentum=self._bn_mom, eps=self._bn_eps)
 

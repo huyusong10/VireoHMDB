@@ -216,8 +216,8 @@ class SE(nn.Module):
         self._pool = self._pool3d = nn.AdaptiveAvgPool3d(1)
 
         inc = max(1, channels // reduction)
-        self._reduce_conv = self.conv3d(channels, inc, 1, bias=True)
-        self._expand_conv = self.conv3d(inc, channels, 1, bias=True)
+        self._reduce_conv = self.conv3d(channels, inc, 1, bias=False)
+        self._expand_conv = self.conv3d(inc, channels, 1, bias=False)
 
         self._activate = nn.ReLU()
 
