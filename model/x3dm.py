@@ -35,7 +35,7 @@ class X3DTransform(nn.Module):
         self._bn1 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
 
         if self._se:
-            self._attention = SE(expc)
+            self._attention = Attention3d(expc)
 
         # projec conv
         self._project_conv = self.conv3d(

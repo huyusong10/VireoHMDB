@@ -229,6 +229,72 @@ class SE(nn.Module):
         x = self._expand_conv(x)
 
         return torch.sigmoid(x) * inputs
+
+
+class Attention3d_dev(nn.Module):
+
+    def __init__(self, channels, bn_mom=0.99, bn_eps=0.001, reduction=48):
+        super().__init__()
+
+        self._channels = channels
+        self._bn_mom = bn_mom
+        self._bn_eps = bn_eps
+        _, _, self.conv3d = get_conv()
+
+        # depthwise conv
+        depth_chann = channels * 3
+        self._depthwise_conv = self.conv3d(
+            in_channels=depth_chann, out_channels=depth_chann, groups=depth_chann,
+            kernel_size=(3, 1, 1), bias=False
+        )
+        self._bn1 = nn.BatchNorm3d(num_features=depth_chann, momentum=self._bn_mom, eps=self._bn_eps)
+
+        # se attention
+        se_chann = max(1, depth_chann//reduction)
+        self._se_reduce = self.conv3d(in_channels=depth_chann, out_channels=se_chann, kernel_size=1, bias=True)
+
+        # project conv
+        self._project_conv = self.conv3d(
+            in_channels=se_chann, out_channels=depth_chann,
+            kernel_size=1, bias=True
+        )
+        self._activate = get_act('ReLU')
+
+    def forward(self, inputs):
+
+        _b, _c, _d, _h, _w = inputs.shape
+        min_dim = min(_d, _h, _w)
+
+        # reduce dimensionality to 2d
+        d = inputs
+        d = F.adaptive_avg_pool3d(d, (min_dim, 1, 1))
+        h = inputs.transpose(2, 4)
+        h = F.adaptive_avg_pool3d(h, (min_dim, 1, 1))
+        w = inputs.transpose(3, 4)
+        w = F.adaptive_avg_pool3d(w, (min_dim, 1, 1))
+
+        # stack three group of 2D feature maps
+        x = torch.cat((d, h, w), dim=1)
+
+        # depthwise conv
+        x = self._depthwise_conv(x)
+        x = self._bn1(x)
+        x = self._activate(x)
+
+        # reduce dimensionality to 1d
+        x = self._se_reduce(x)
+        x = self._activate(x)
+
+        # pointwise conv
+        x = self._project_conv(x).sigmoid()
+
+        d, h, w = torch.split(x, self._channels, dim=1)
+        h = h.transpose(2, 4)
+        w = w.transpose(3, 4)
+        mask = F.interpolate((d * h * w), size=(_d, _h, _w))
+        out = inputs * mask
+
+        return out
         
 
         
