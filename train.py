@@ -11,6 +11,7 @@ from tensorboardX import SummaryWriter
 from runner import Runner
 from model.model import VireoNet
 from model.x3dm import X3Dm
+from model.model_dev import VireoDev
 from dataset.hmdb_data import get_loaders
 from utils.utils import check_file, select_device, init_seeds
 
@@ -30,6 +31,8 @@ def get_model(path, num_classes, name='vireonet'):
         model_cls = VireoNet
     elif name == 'x3dm':
         model_cls = X3Dm
+    elif name == 'vireodev':
+        model_cls = VireoDev
 
     if path:
         path = check_file(path)
