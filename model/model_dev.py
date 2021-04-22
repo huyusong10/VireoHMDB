@@ -133,7 +133,7 @@ class Fused_Transform3D(nn.Module):
 
 class VireoDev(nn.Module):
     
-    def __init__(self, num_classes, bn_mom = 0.9, bn_eps=0.001, min_ratio=2, max_ratio=4):
+    def __init__(self, num_classes, bn_mom = 0.9, bn_eps=0.001, expand_ratio=4):
         super().__init__()
         _, self.conv2d, self.conv3d = get_conv()
         self._bn_mom = 1 - bn_mom
@@ -154,6 +154,8 @@ class VireoDev(nn.Module):
         se = [True, True, True, True, True]
         input_chann, stem_chann = 3, 24
 
+        max_ratio = expand_ratio
+        min_ratio = expand_ratio / 2
         block_num = len(repeats)
         ratio_pow = (max_ratio / min_ratio) ** (1 / (block_num))
         channels = [stem_chann]
