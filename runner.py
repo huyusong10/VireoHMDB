@@ -25,11 +25,11 @@ class Runner():
         self.save = True if self.params.mode == 'train' else False
 
     def save(self, epoch, filename="train"):
-            torch.save({"epoch": epoch,
-                        "network": self.net.module.state_dict(),
-                        "top1": self.top1,
-                        }, self.params.save_dir + "/%s.pth" % (filename))
-            print("Model saved %d epoch" % (epoch))
+        torch.save({"epoch": epoch,
+                    "network": self.net.module.state_dict(),
+                    "top1": self.top1,
+                    }, self.params.save_dir + "/%s.pth" % (filename))
+        print("Model saved %d epoch" % (epoch))
 
     def train(self, loaders):
 

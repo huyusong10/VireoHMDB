@@ -1,4 +1,4 @@
-device: '0'
+device: '1'
 num_workers: 16
 weights: ''
 num_classes: 51
@@ -17,11 +17,11 @@ mode: 'test'
 
 weight_decay: 0.0001
 
-frames: 16
+frames: 14
 img_size: 224
-model: vireodev
+model: x3dm
 
 input_dir: '../../data/hmdb51'
-save_dir: '../../outs/3d'
+save_dir: '../../outs/new3d'
 
-note: '16 fps vireodev auto adapt expand ratio'
+note: '14 fps x3dm 0.5 dropout'

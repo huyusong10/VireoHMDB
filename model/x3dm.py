@@ -84,7 +84,7 @@ class X3Dm(nn.Module):
             (1, 2, 2),
         ]
         channels = [24, 48, 96, 192]
-        se = [False] * 6
+        se = [True] * 6
 
         input_chann = 3
         stem_chann = 24
@@ -108,7 +108,7 @@ class X3Dm(nn.Module):
 
         head_chann = 2048
         self._avg_pooling = nn.AdaptiveAvgPool3d(1)
-        self._dropout = nn.Dropout(0.2)
+        self._dropout = nn.Dropout(0.5)
         self._fc1 = nn.Linear(expand_chann, head_chann)
         self._fc2 = nn.Linear(head_chann, num_classes)
 
