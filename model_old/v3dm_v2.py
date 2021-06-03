@@ -8,7 +8,7 @@ from functools import partial
 from .utils import get_conv, get_act
 from .attention3d import Attention3d, Attention3d_up, SE
 
-class X3DTransform(nn.Module):
+class V3DTransform(nn.Module):
 
     def __init__(self, inc, ouc, kernel_size, stride, expand_ratio, bn_mom=0.99, bn_eps=0.001, se=False):
         super().__init__()
@@ -21,21 +21,22 @@ class X3DTransform(nn.Module):
         self._se = se
         _, _, self.conv3d = get_conv()
 
-        # expand phase
-        expc = round(ouc * expand_ratio)
-        if expand_ratio != 1:
-            self._expand_conv = self.conv3d(in_channels=inc, out_channels=expc, kernel_size=1, bias=False)
-            self._bn0 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
-
-        # channelwise conv
+        # depthwise
         self._depthwise_conv = self.conv3d(
-            in_channels=expc, out_channels=expc, groups=expc,
+            in_channels=inc, out_channels=inc, groups=inc,
             kernel_size=kernel_size, stride=stride, bias=False
         )
-        self._bn1 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
+        self._bn0 = nn.BatchNorm3d(num_features=inc, momentum=self._bn_mom, eps=self._bn_eps)
+
+        # expand
+        expc = round(ouc * expand_ratio)
+        expand_expc = expc - inc
+        if expand_ratio != 1:
+            self._expand_conv = self.conv3d(in_channels=inc, out_channels=expand_expc, kernel_size=1, bias=False)
+            self._bn1 = nn.BatchNorm3d(num_features=expand_expc, momentum=self._bn_mom, eps=self._bn_eps)
 
         if self._se:
-            self._attention = Attention3d(expc)
+            self._attention = Attention3d(expand_expc)
 
         # projec conv
         self._project_conv = self.conv3d(
@@ -47,17 +48,18 @@ class X3DTransform(nn.Module):
     def forward(self, inputs):
         x = inputs
 
-        if self.expand_ratio != 1:
-            x = self._expand_conv(x)
-            x = self._bn0(x)
-            x = self._activate(x)
-
         x = self._depthwise_conv(x)
-        x = self._bn1(x)
-        x = self._activate(x)
+        depth_x = self._bn0(x)
+
+        if self.expand_ratio != 1:
+            x = self._expand_conv(depth_x)
+            x = self._bn1(x)
+            x = self._activate(x)
 
         if self._se:
             self._attention(x)
+
+        x = torch.cat((x, depth_x), dim=1)
 
         x = self._project_conv(x)
         x = self._bn2(x)
@@ -68,7 +70,7 @@ class X3DTransform(nn.Module):
         return x
 
 
-class X3Dm(nn.Module):
+class V3DmV2(nn.Module):
 
     def __init__(self, num_classes, expand_ratio=4, bn_mom = 0.9, bn_eps=0.001):
         super().__init__()
@@ -95,10 +97,10 @@ class X3Dm(nn.Module):
         self._res_blocks = []
         channels = [stem_chann] + channels
         for idx in range(len(repeats)):
-            block = X3DTransform(channels[idx], channels[idx+1], kernel_size=3, stride=strides[idx], expand_ratio=expand_ratio)
+            block = V3DTransform(channels[idx], channels[idx+1], kernel_size=3, stride=strides[idx], expand_ratio=expand_ratio)
             self._res_blocks.append(block)
             for _ in range(repeats[idx] - 1):
-                block = X3DTransform(channels[idx+1], channels[idx+1], kernel_size=3, stride=1, se=se[idx], expand_ratio=expand_ratio)
+                block = V3DTransform(channels[idx+1], channels[idx+1], kernel_size=3, stride=1, se=se[idx], expand_ratio=expand_ratio)
                 self._res_blocks.append(block)
         self._res_blocks = nn.Sequential(*self._res_blocks)
 

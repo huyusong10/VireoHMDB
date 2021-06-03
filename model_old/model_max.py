@@ -25,7 +25,7 @@ class Transform3D(nn.Module):
         _, self.conv2d, self.conv3d = get_conv()
 
         # expand phase
-        expc = round(inc * self.expand_ratio)
+        expc = round(ouc * self.expand_ratio)
         if self.expand_ratio != 1:
             self._expand_conv = self.conv3d(in_channels=inc, out_channels=expc, kernel_size=1, bias=False)
             self._bn0 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
@@ -89,7 +89,7 @@ class Fused_Transform3D(nn.Module):
         _, _, self.conv3d = get_conv()
 
         # expand phase
-        expc = round(inc * self.expand_ratio)
+        expc = round(ouc * self.expand_ratio)
 
         # fused conv
         self._fused_conv = self.conv3d(
@@ -131,7 +131,7 @@ class Fused_Transform3D(nn.Module):
         return x
 
 
-class VireoU(nn.Module):
+class VireoMax(nn.Module):
     
     def __init__(self, num_classes, bn_mom = 0.9, bn_eps=0.001, expand_ratio=4):
         super().__init__()
@@ -141,8 +141,8 @@ class VireoU(nn.Module):
         self.Transform3D = Transform3D
         self.Fused_Transform3D = Fused_Transform3D
 
-        repeats = [2, 3, 4, 4, 5]
-        kernel_size = [3, 3, 3, 3, 3]
+        repeats = [2, 3, 4, 4, 3]
+        kernel_size = [3, 3, 5, 3, 3]
         fused = [False, False, False, False, False, False]
         strides = [
             (1, 2, 2),
@@ -152,14 +152,14 @@ class VireoU(nn.Module):
             (2, 2, 2),
         ]
         se = [True, True, True, True, True, True]
-        input_chann, stem_chann = 3, 16
+        input_chann, stem_chann = 3, 32
 
         reduction = 1 / 2
         chann_expand = 2.0
-        natural_expand, downsample_expand = chann_expand ** (1 / 4), chann_expand ** (3 / 4)
+        natural_expand, downsample_expand = chann_expand ** (1 / 2), chann_expand ** (1 / 2)
 
         reduce_pow = (reduction) ** (1 / (len(repeats) - 1))
-        natural_reduce_pow = (1 / downsample_expand) ** (1 / (len(repeats) - 1))
+        natural_expand_pow = natural_expand ** (1 / (len(repeats) - 1))
 
         stage_channels = [stem_chann]
         stage_expand_ratios = []
@@ -171,11 +171,10 @@ class VireoU(nn.Module):
             stage_ratio = expand_ratio * ratio
             stage_expand_ratios.append(stage_ratio)
 
-            this_downsample_expand = downsample_expand * natural_reduce_pow ** i
             if sum(strides[i]) > 3:
-                max_channels = round(stage_channels[-1] * (this_downsample_expand * natural_expand))
+                max_channels = round(stage_channels[-1] * (downsample_expand * natural_expand_pow ** i))
             else:
-                max_channels = round(stage_channels[-1] * natural_expand)
+                max_channels = round(stage_channels[-1] * natural_expand_pow ** i)
             stage_channels.append(max_channels)
 
             max_reduction = reduction * (1 / reduce_pow) ** i
@@ -183,11 +182,11 @@ class VireoU(nn.Module):
             instage_expand_ratio = [stage_ratio * instage_channel_reduce_pow ** x for x in range(repeats[i])]
             instage_expand_ratios.append(instage_expand_ratio)
 
-        print(stage_channels)
-        print(stage_expand_ratios)
-        print(instage_expand_ratios)
+        # print(stage_channels)
+        # print(stage_expand_ratios)
+        # print(instage_expand_ratios)
 
-        self._stem = self.Fused_Transform3D(input_chann, stage_channels[0], kernel_size=(5, 5, 5), stride=(1, 2, 2), expand_ratio=8)
+        self._stem = self.Fused_Transform3D(input_chann, stage_channels[0], kernel_size=(5, 5, 5), stride=(1, 2, 2), expand_ratio=2)
         self._stem_bn = nn.BatchNorm3d(num_features=stage_channels[0], momentum=self._bn_mom, eps=self._bn_eps)
 
         self._blocks = []

@@ -11,13 +11,16 @@ from tensorboardX import SummaryWriter
 from runner import Runner
 from model.model import VireoNet
 from model.x3dm import X3Dm
-from model.model_dev import VireoDev
-from model.model_new import VireoNew
-from model.model_ultra import VireoU
-from model.model_pro import VireoPro
-from model.model_max import VireoMax
-from model.dense_vireo import DenseVireo
-from model.dense_vireo_v2 import DenseVireoV2
+from model.x3dv import X3DV
+from model.x3dv2 import X3DV2
+from model.x3dv3 import X3DV3
+from model.x3dv4 import X3DV4
+from model.x3dc import X3Dc
+from model.x3dc_v2 import X3DcV2
+from model.light3d import Light3D
+from model.light3d_v2 import Light3DV2
+from model.light3d_v3 import Light3DV3
+from model.light3d_v4 import Light3DV4
 from dataset.hmdb_data import get_loaders
 from utils.utils import check_file, select_device, init_seeds
 
@@ -29,22 +32,35 @@ class Params:
     def __getattr__(self, item):
         return self.params.get(item, None)
 
-    def get_dict(self):
+    def get_original(self):
         return self.params
 
 def get_model(path, num_classes, model_name):
 
     model_cls = {
+        # 'v3dm': V3Dm,
+        # 'v3dmv2': V3DmV2,
+        # 'vireodev': VireoDev,
+        # 'vireonew': VireoNew,
+        # 'vireou': VireoU,
+        # 'vireopro': VireoPro,
+        # 'vireomax': VireoMax,
+        # 'densevireo': DenseVireo,
+        # 'densevireov2': DenseVireoV2,
+        # 'densevireov3': DenseVireoV3,
+        # 'densevireov4': DenseVireoV4,
         'vireonet': VireoNet,
         'x3dm': X3Dm,
-        'vireodev': VireoDev,
-        'vireonew': VireoNew,
-        'vireou': VireoU,
-        'vireopro': VireoPro,
-        'vireomax': VireoMax,
-        'densevireo': DenseVireo,
-        'densevireov2': DenseVireoV2,
-        'densevireov3': DenseVireoV3,
+        'x3dv': X3DV,
+        'x3dv2': X3DV2,
+        'x3dv3': X3DV3,
+        'x3dv4': X3DV4,
+        'x3dc': X3Dc,
+        'x3dcv2': X3DcV2,
+        'light3d': Light3D,
+        'light3dv2': Light3DV2,
+        'light3dv3': Light3DV3,
+        'light3dv4': Light3DV4,
     }[model_name]
 
     print('using {}'.format(model_name))
@@ -113,7 +129,8 @@ if __name__ == "__main__":
     optim.add_param_group({'params': pg1, 'weight_decay': params.weight_decay_nbs})
     optim.add_param_group({'params': pg2})
     print('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg2), len(pg1), len(pg0)))
-    print(sum(p.numel() for p in net.parameters() if p.requires_grad) )
+    net_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
+    print(net_params)
     del pg0, pg1, pg2
 
     scheduler = get_scheduler(optim, params.epoch, warm_up=params.warmup)
@@ -124,7 +141,9 @@ if __name__ == "__main__":
         writer = SummaryWriter(params.save_dir + '/' + params.note.replace(' ', '') + f'/{datetime.datetime.now().strftime("%Y%m%d:%H%M")}')
         params.save_dir = writer.logdir
         with open(os.path.join(params.save_dir, 'params.yml'), 'w') as f:
-            yaml.dump(params.get_dict(), f, sort_keys=False)
+            p = params.get_original()
+            p.update({'params': net_params})
+            yaml.dump(p, f, sort_keys=False)
 
     model = Runner(params, net, optim, device, loss, writer, scheduler)
     model.train(loaders)  

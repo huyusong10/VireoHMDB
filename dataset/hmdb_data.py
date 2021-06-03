@@ -62,7 +62,7 @@ class HMDBDataset(Dataset):
         video.release()
 
         # stack and convert to 0~1 tensor
-        frames = torch.tensor(np.stack(frames)) / 255
+        frames = torch.from_numpy(np.stack(frames)) / 255
         # (d, h, w, c) -> (d, c, h, w)  d: depth or frames
         frames = frames.permute(0, 3, 1, 2)
 

@@ -13,7 +13,7 @@ from .attention3d import Attention3d, Attention3d_up, Attention3d_dev, SE
 
 class Transform3D(nn.Module):
 
-    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio=4, bn_mom=0.9, bn_eps=0.001, se=False):
+    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio, bn_mom=0.9, bn_eps=0.001, se=False):
         super().__init__()
         self.inc = inc
         self.ouc = ouc
@@ -25,7 +25,7 @@ class Transform3D(nn.Module):
         _, self.conv2d, self.conv3d = get_conv()
 
         # expand phase
-        expc = round(inc * self.expand_ratio)
+        expc = round(ouc * self.expand_ratio)
         if self.expand_ratio != 1:
             self._expand_conv = self.conv3d(in_channels=inc, out_channels=expc, kernel_size=1, bias=False)
             self._bn0 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
@@ -77,7 +77,7 @@ class Transform3D(nn.Module):
 
 class Fused_Transform3D(nn.Module):
 
-    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio=4, bn_mom=0.9, bn_eps=0.001, se=False):
+    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio, bn_mom=0.9, bn_eps=0.001, se=False):
         super().__init__()
         self.inc = inc
         self.ouc = ouc
@@ -89,7 +89,7 @@ class Fused_Transform3D(nn.Module):
         _, _, self.conv3d = get_conv()
 
         # expand phase
-        expc = round(inc * self.expand_ratio)
+        expc = round(ouc * self.expand_ratio)
 
         # fused conv
         self._fused_conv = self.conv3d(
@@ -187,7 +187,7 @@ class VireoPro(nn.Module):
         print(stage_expand_ratios)
         print(instage_expand_ratios)
 
-        self._stem = self.Fused_Transform3D(input_chann, stage_channels[0], kernel_size=(5, 5, 5), stride=(1, 2, 2), expand_ratio=1)
+        self._stem = self.Fused_Transform3D(input_chann, stage_channels[0], kernel_size=(5, 5, 5), stride=(1, 2, 2), expand_ratio=2)
         self._stem_bn = nn.BatchNorm3d(num_features=stage_channels[0], momentum=self._bn_mom, eps=self._bn_eps)
 
         self._blocks = []

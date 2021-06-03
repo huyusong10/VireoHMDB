@@ -68,7 +68,7 @@ class X3DTransform(nn.Module):
         return x
 
 
-class X3Dm(nn.Module):
+class X3DV(nn.Module):
 
     def __init__(self, num_classes, expand_ratio=4, bn_mom = 0.9, bn_eps=0.001):
         super().__init__()
@@ -84,7 +84,7 @@ class X3Dm(nn.Module):
             (1, 2, 2),
         ]
         channels = [24, 48, 96, 192]
-        se = [True] * 6
+        se = [True] * 4
 
         input_chann = 3
         stem_chann = 24
@@ -92,13 +92,32 @@ class X3Dm(nn.Module):
         self._stem_conv_t = self.conv3d(stem_chann, stem_chann, stride=(1, 1, 1), kernel_size=(5, 1, 1), bias=False)
         self._stem_bn = nn.BatchNorm3d(num_features=24, momentum=self._bn_mom, eps=self._bn_eps)
 
+        reduction = 1 / 2
+        reduce_pow = (reduction) ** (1 / (len(repeats) - 1))
+        stage_expand_ratios = []
+        instage_expand_ratios = []
+
+        for i, block_repeats in enumerate(repeats):
+            ratio = reduce_pow ** i
+
+            stage_ratio = expand_ratio * ratio
+            stage_expand_ratios.append(stage_ratio)
+
+            max_reduction = reduction * (1 / reduce_pow) ** i
+            instage_channel_reduce_pow = max_reduction ** (1 / (max(repeats[i] - 1, 1)))
+            instage_expand_ratio = [stage_ratio * instage_channel_reduce_pow ** x for x in range(repeats[i])]
+            instage_expand_ratios.append(instage_expand_ratio)
+
+        print(stage_expand_ratios)
+        print(instage_expand_ratios)
+
         self._res_blocks = []
         channels = [stem_chann] + channels
         for idx in range(len(repeats)):
-            block = X3DTransform(channels[idx], channels[idx+1], kernel_size=3, stride=strides[idx], expand_ratio=expand_ratio)
+            block = X3DTransform(channels[idx], channels[idx+1], kernel_size=3, stride=strides[idx], expand_ratio=instage_expand_ratios[idx][0])
             self._res_blocks.append(block)
-            for _ in range(repeats[idx] - 1):
-                block = X3DTransform(channels[idx+1], channels[idx+1], kernel_size=3, stride=1, se=se[idx], expand_ratio=expand_ratio)
+            for i in range(repeats[idx] - 1):
+                block = X3DTransform(channels[idx+1], channels[idx+1], kernel_size=3, stride=1, se=se[idx], expand_ratio=instage_expand_ratios[idx][i+1])
                 self._res_blocks.append(block)
         self._res_blocks = nn.Sequential(*self._res_blocks)
 

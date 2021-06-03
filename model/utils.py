@@ -181,7 +181,7 @@ class MaxPool3dStaticSamePadding(nn.Module):
         extra_h = (math.ceil(w / self.stride[2]) - 1) * self.stride[2] - w + self.kernel_size[2]
         extra_v = (math.ceil(h / self.stride[1]) - 1) * self.stride[1] - h + self.kernel_size[1]
         extra_d = (math.ceil(d / self.stride[0]) - 1) * self.stride[0] - d + self.kernel_size[0]
-
+        
         left = extra_h // 2
         right = extra_h - left
         top = extra_v // 2

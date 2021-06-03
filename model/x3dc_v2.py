@@ -44,6 +44,15 @@ class X3DTransform(nn.Module):
         self._bn2 = nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
         self._activate = get_act('ReLU')
 
+        if inc == ouc and stride == 1:
+            self.shortcut = nn.Sequential()
+        else:
+            self.shortcut = nn.Sequential(
+                self.conv3d(in_channels=inc, out_channels=inc, groups=inc, kernel_size=kernel_size, stride=stride, bias=False),
+                self.conv3d(in_channels=inc, out_channels=ouc, kernel_size=1, bias=False),
+                nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
+            )
+
     def forward(self, inputs):
         x = inputs
 
@@ -62,15 +71,60 @@ class X3DTransform(nn.Module):
         x = self._project_conv(x)
         x = self._bn2(x)
 
-        if self.inc == self.ouc and self.stride == 1:
-            x = x + inputs
+        x = x + self.shortcut(inputs)
 
         return x
 
+class Stem(nn.Module):
 
-class X3Dm(nn.Module):
+    def __init__(self, inc, ouc, kernel_size, stride, expand_ratio, bn_mom=0.9, bn_eps=0.001):
+        super().__init__()
+        self.inc = inc
+        self.ouc = ouc
+        self.stride = stride
+        self.expand_ratio = expand_ratio
+        self._bn_mom = 1 - bn_mom
+        self._bn_eps = bn_eps
+        _, _, self.conv3d = get_conv()
 
-    def __init__(self, num_classes, expand_ratio=4, bn_mom = 0.9, bn_eps=0.001):
+        # expand phase
+        expc = round(ouc * self.expand_ratio)
+
+        # fused conv
+        self._fused_conv = self.conv3d(
+            in_channels=inc, out_channels=expc, groups=1,
+            kernel_size=kernel_size, stride=stride, bias=False
+        )
+        self._bn1 = nn.BatchNorm3d(num_features=expc, momentum=self._bn_mom, eps=self._bn_eps)
+
+        # project conv
+        self._project_conv = self.conv3d(
+            in_channels=expc, out_channels=ouc, kernel_size=1, bias=False
+        )
+        self._bn2 = nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
+
+        self._activate = get_act('ReLU')
+
+    def forward(self, inputs):
+        x = inputs
+
+        # fused conv
+        x = self._fused_conv(x)
+        x = self._bn1(x)
+        x = self._activate(x)
+
+        # project conv
+        x = self._project_conv(x)
+        x = self._bn2(x)
+
+        # skip connection
+        if self.inc == self.ouc and self.stride == 1:
+            x = x + inputs
+        return x
+
+class X3DcV2(nn.Module):
+
+    def __init__(self, num_classes, expand_ratio=2.25, bn_mom = 0.9, bn_eps=0.001):
         super().__init__()
         _, _, self.conv3d = get_conv()
         self._bn_mom = 1 - bn_mom
@@ -84,12 +138,13 @@ class X3Dm(nn.Module):
             (1, 2, 2),
         ]
         channels = [24, 48, 96, 192]
-        se = [True] * 6
+        se = [True] * 4
 
         input_chann = 3
         stem_chann = 24
-        self._stem_conv_xy = self.conv3d(input_chann, stem_chann, stride=(1, 2, 2), kernel_size=(1, 3, 3), bias=False)
-        self._stem_conv_t = self.conv3d(stem_chann, stem_chann, stride=(1, 1, 1), kernel_size=(5, 1, 1), bias=False)
+        # self._stem_conv_xy = self.conv3d(input_chann, stem_chann, stride=(1, 2, 2), kernel_size=(1, 3, 3), bias=False)
+        # self._stem_conv_t = self.conv3d(stem_chann, stem_chann, stride=(1, 1, 1), kernel_size=(5, 1, 1), bias=False)
+        self._stem = self.conv3d(input_chann, stem_chann, stride=(1, 2, 2), kernel_size=(5, 3, 3), bias=False)
         self._stem_bn = nn.BatchNorm3d(num_features=24, momentum=self._bn_mom, eps=self._bn_eps)
 
         self._res_blocks = []
@@ -115,10 +170,11 @@ class X3Dm(nn.Module):
         self._activate = get_act('ReLU')
 
     def forward(self, inputs):
-        x = self._stem_conv_xy(inputs)
-        x = self._stem_conv_t(x)
+        # x = self._stem_conv_xy(inputs)
+        # x = self._stem_conv_t(x)
+        # x = self._activate(x)
+        x = self._stem(inputs)
         x = self._stem_bn(x)
-        x = self._activate(x)
 
         x = self._res_blocks(x)
         x = self._expand_conv(x)

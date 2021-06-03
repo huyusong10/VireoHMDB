@@ -134,19 +134,21 @@ class DenseVireoV3(nn.Module):
         self.Transform3D = Transform3D
         self.Fused_Transform3D = Fused_Transform3D
 
-        repeats = [3, 5, 6, 6, 6, 6]
-        kernel_size = [3, 3, 3, 3, 3, 3]
+        repeats = [3, 4, 4, 4, 4, 4, 4, 4]
+        kernel_size = [3, 3, 3, 3, 3, 3, 3, 3]
         strides = [
-            (1, 2, 2),
-            (1, 2, 2),
-            (1, 2, 2),
+            (1, 2, 2),  # 56
+            (1, 2, 2),  # 28
             (1, 1, 1),
-            (2, 2, 2),
+            (1, 2, 2),  # 14
             (1, 1, 1),
+            (2, 2, 2),  # 7
+            (1, 1, 1),
+            (1, 1, 1), 
         ]
-        se = [True, True, True, True, True, True]
+        se = [True, True, True, True, True, True, True, True]
         input_chann, stem_chann = 3, 24
-        channels = [24, 48, 72, 96, 120, 144]
+        channels = [24, 48, 72, 96, 120, 144, 168, 196]
 
         self._stem = self.Fused_Transform3D(input_chann, stem_chann, kernel_size=(3, 3, 3), stride=(1, 2, 2), expand_ratio=2)
         self._stem_bn = nn.BatchNorm3d(num_features=stem_chann, momentum=self._bn_mom, eps=self._bn_eps)

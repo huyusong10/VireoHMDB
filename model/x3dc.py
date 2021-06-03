@@ -44,6 +44,15 @@ class X3DTransform(nn.Module):
         self._bn2 = nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
         self._activate = get_act('ReLU')
 
+        if inc == ouc and stride == 1:
+            self.shortcut = nn.Sequential()
+        else:
+            self.shortcut = nn.Sequential(
+                self.conv3d(in_channels=inc, out_channels=inc, groups=inc, kernel_size=kernel_size, stride=stride, bias=False),
+                self.conv3d(in_channels=inc, out_channels=ouc, kernel_size=1, bias=False),
+                nn.BatchNorm3d(num_features=ouc, momentum=self._bn_mom, eps=self._bn_eps)
+            )
+
     def forward(self, inputs):
         x = inputs
 
@@ -62,13 +71,12 @@ class X3DTransform(nn.Module):
         x = self._project_conv(x)
         x = self._bn2(x)
 
-        if self.inc == self.ouc and self.stride == 1:
-            x = x + inputs
+        x = x + self.shortcut(inputs)
 
         return x
 
 
-class X3Dm(nn.Module):
+class X3Dc(nn.Module):
 
     def __init__(self, num_classes, expand_ratio=4, bn_mom = 0.9, bn_eps=0.001):
         super().__init__()
@@ -84,7 +92,7 @@ class X3Dm(nn.Module):
             (1, 2, 2),
         ]
         channels = [24, 48, 96, 192]
-        se = [True] * 6
+        se = [True] * 4
 
         input_chann = 3
         stem_chann = 24
